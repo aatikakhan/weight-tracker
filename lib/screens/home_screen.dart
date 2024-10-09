@@ -11,7 +11,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  
   @override
   void initState() {
     super.initState();
@@ -66,10 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Consumer<WeightProvider>(
         builder: (context, weightProvider, child) {
+          List weightList = weightProvider.weights.reversed.toList();
           return ListView.builder(
-            itemCount: weightProvider.weights.length,
+            itemCount: weightList.length,
             itemBuilder: (context, index) {
-              return WeightEntryTile(weightProvider.weights[index]);
+              return WeightEntryTile(weightList[index]);
             },
           );
         },
