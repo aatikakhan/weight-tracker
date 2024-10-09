@@ -19,7 +19,7 @@ class WeightProvider with ChangeNotifier {
 
   Future<void> addWeight(double weight) async {
     final entry = WeightEntry(
-      id: 0, // 0 for auto-increment
+      id: null,
       date: DateTime.now().toString(),
       weight: weight,
     );

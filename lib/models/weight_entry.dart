@@ -1,13 +1,9 @@
 class WeightEntry {
-  final int id;
+  final int? id;
   final String date;
   final double weight;
 
-  WeightEntry({
-    required this.id,
-    required this.date,
-    required this.weight,
-  });
+  WeightEntry({this.id, required this.date, required this.weight});
 
   Map<String, dynamic> toMap() {
     return {
