@@ -41,6 +41,7 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
   path: ^1.8.0 
+  intl: ^0.18.0
 
 
 dev_dependencies:

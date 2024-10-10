@@ -7,8 +7,9 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
+    // Android Initialization Settings
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon');
+        AndroidInitializationSettings('@mipmap/ic_launcher'); // Use your icon here
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
@@ -16,7 +17,27 @@ class NotificationService {
       iOS: DarwinInitializationSettings(),
     );
 
+    // Initialize the plugin
     await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    // Create a notification channel
+    await _createNotificationChannel();
+  }
+
+  Future<void> _createNotificationChannel() async {
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'your_channel_id', // Unique channel ID
+      'your_channel_name', // User-visible channel name
+      description: 'Channel for weight tracker notifications',
+      importance: Importance.high, // Importance level
+      playSound: true, // Play sound when a notification is received
+    );
+
+    // Create the channel on the device
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
   }
 
   Future<void> scheduleDailyNotification(TimeOfDay time) async {
@@ -30,8 +51,15 @@ class NotificationService {
           'your_channel_id',
           'your_channel_name',
           channelDescription: 'Channel for weight tracker notifications',
+          importance: Importance.high, // Set importance level
+          priority: Priority.high, // Set priority level
+          playSound: true, // Enable sound
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true, // Show alert
+          presentBadge: true, // Badge app icon
+          presentSound: true, // Play sound
+        ),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:

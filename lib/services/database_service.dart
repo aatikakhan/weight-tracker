@@ -15,21 +15,22 @@ class DatabaseService {
   }
 
   Future<Database> _initDB() async {
-    // Get the directory for the database
-    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, 'weight_tracker.db'); // Create a path for the database file
+    final Directory documentsDirectory =
+        await getApplicationDocumentsDirectory();
+    String path = join(documentsDirectory.path, 'weight_tracker.db');
 
     return await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
-          CREATE TABLE weights(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            weight REAL
-          )
-        ''');
+      CREATE TABLE weights(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        weight REAL,
+        isMissed INTEGER DEFAULT 0
+      )
+    ''');
       },
     );
   }
@@ -50,14 +51,16 @@ class DatabaseService {
     return List.generate(maps.length, (i) {
       return WeightEntry(
         id: maps[i]['id'],
-        date: maps[i]['date'],
+        date: DateTime.parse(maps[i]['date']),
         weight: maps[i]['weight'],
+        isMissed: maps[i]['isMissed'] == 1, // Convert integer to bool
       );
     });
   }
 
-   Future<void> deleteDatabase() async {
-    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+  Future<void> deleteDatabase() async {
+    final Directory documentsDirectory =
+        await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, 'weight_tracker.db');
 
     final File dbFile = File(path);
