@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  TimeOfDay? _notificationTime; // Variable to store the notification time
+
   Future<void> init() async {
     // Android Initialization Settings
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher'); // Use your icon here
+        AndroidInitializationSettings(
+            '@mipmap/ic_launcher'); // Use your app icon
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
@@ -40,9 +44,27 @@ class NotificationService {
         ?.createNotificationChannel(channel);
   }
 
+  // Method to select notification time
+  void selectNotificationTime(TimeOfDay time) {
+    _notificationTime = time; // Store the selected time
+  }
+
+  // Method to get formatted notification time for display
+  String getFormattedNotificationTime() {
+    if (_notificationTime != null) {
+      // Convert TimeOfDay to DateTime
+      DateTime now = DateTime.now();
+      DateTime dateTime = DateTime(now.year, now.month, now.day,
+          _notificationTime!.hour, _notificationTime!.minute);
+      return DateFormat.jm().format(dateTime); // Format as "hh:mm AM/PM"
+    }
+    return 'Not set';
+  }
+
+  // Method to schedule daily notifications
   Future<void> scheduleDailyNotification(TimeOfDay time) async {
     await _flutterLocalNotificationsPlugin.zonedSchedule(
-      0,
+      0, // Notification ID
       'Weight Tracker Reminder',
       'Don\'t forget to record your weight today!',
       _nextInstanceOfTime(time),
@@ -68,6 +90,7 @@ class NotificationService {
     );
   }
 
+  // Helper method to determine the next instance of the scheduled time
   tz.TZDateTime _nextInstanceOfTime(TimeOfDay time) {
     final now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(

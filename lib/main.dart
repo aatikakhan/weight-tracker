@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/weight_provider.dart';
 import 'screens/home_screen.dart';
-import 'screens/settings_screen.dart';
+// import 'screens/settings_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/theme.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -11,6 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
   tz.initializeTimeZones();
+  
   runApp(const MyApp());
 }
 
@@ -19,8 +20,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => WeightProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WeightProvider()),
+        Provider(create: (_) => NotificationService()), // Provide NotificationService
+      ],
       child: Consumer<WeightProvider>(
         builder: (context, weightProvider, child) {
           return MaterialApp(

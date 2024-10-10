@@ -9,7 +9,8 @@ class WeightEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String formattedDate = DateFormat('dd MMMM yyyy hh:mm').format(entry.date);
+    String formattedDate =
+        DateFormat('dd MMMM yyyy hh:mm a').format(entry.date);
     return ListTile(
       title: entry.isMissed
           ? const Text(

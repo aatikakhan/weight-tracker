@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/weight_provider.dart';
+import '../services/notification_service.dart';
 import '../components/weight_entry_tile.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,6 +16,31 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     Provider.of<WeightProvider>(context, listen: false).loadWeights();
+  }
+
+  void _scheduleNotification() async {
+    TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (time != null) {
+      final notificationService =
+          Provider.of<NotificationService>(context, listen: false);
+      notificationService.selectNotificationTime(time);
+      await notificationService.scheduleDailyNotification(time);
+
+      // Display a snack bar to indicate the scheduled time
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Notification scheduled for ${notificationService.getFormattedNotificationTime()}'),
+        ),
+      );
+
+      // Trigger a rebuild to update the UI
+      setState(() {});
+    }
   }
 
   void _addWeight() async {
@@ -51,32 +77,79 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notificationService = Provider.of<NotificationService>(context);
+    final weightProvider = Provider.of<WeightProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Weight Tracker'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
+          SizedBox(
+            width: MediaQuery.of(context).size.width, // or a specific width
+            child: SwitchListTile(
+              title: const Text('Dark Mode'),
+              value: weightProvider.isDarkMode,
+              onChanged: (value) {
+                weightProvider.toggleTheme();
+              },
+            ),
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          // Permanent tile to display scheduled notification time
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.blue),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Scheduled Notification Time:',
+                  style: TextStyle(fontSize: 16),
+                ),
+                Text(
+                  notificationService.getFormattedNotificationTime(),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            // Ensuring the ListView takes the remaining space
+            child: Consumer<WeightProvider>(
+              builder: (context, weightProvider, child) {
+                List weightList = weightProvider.weights.reversed.toList();
+                return ListView.builder(
+                  itemCount: weightList.length,
+                  itemBuilder: (context, index) {
+                    return WeightEntryTile(weightList[index]);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: Consumer<WeightProvider>(
-        builder: (context, weightProvider, child) {
-          List weightList = weightProvider.weights.reversed.toList();
-          return ListView.builder(
-            itemCount: weightList.length,
-            itemBuilder: (context, index) {
-              return WeightEntryTile(weightList[index]);
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addWeight,
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: _addWeight,
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            onPressed: _scheduleNotification,
+            child: const Icon(Icons.alarm),
+          ),
+        ],
       ),
     );
   }
