@@ -19,14 +19,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _scheduleNotification() async {
+    final notificationService =
+        Provider.of<NotificationService>(context, listen: false);
+
+    // Request permission before scheduling notification
+    await notificationService.requestPermission();
+
     TimeOfDay? time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
 
     if (time != null) {
-      final notificationService =
-          Provider.of<NotificationService>(context, listen: false);
       notificationService.selectNotificationTime(time);
       await notificationService.scheduleDailyNotification(time);
 
@@ -93,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 weightProvider.toggleTheme();
               },
             ),
-          )
+          ),
         ],
       ),
       body: Column(
@@ -122,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            // Ensuring the ListView takes the remaining space
             child: Consumer<WeightProvider>(
               builder: (context, weightProvider, child) {
                 List weightList = weightProvider.weights.reversed.toList();

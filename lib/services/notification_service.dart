@@ -44,15 +44,20 @@ class NotificationService {
         ?.createNotificationChannel(channel);
   }
 
-  // Method to select notification time
-  void selectNotificationTime(TimeOfDay time) {
-    _notificationTime = time; // Store the selected time
+  Future<bool> requestPermission() async {
+    var status = await Permission.notification.status;
+    if (!status.isGranted) {
+      status = await Permission.notification.request();
+    }
+    return status.isGranted;
   }
 
-  // Method to get formatted notification time for display
+  void selectNotificationTime(TimeOfDay time) {
+    _notificationTime = time;
+  }
+
   String getFormattedNotificationTime() {
     if (_notificationTime != null) {
-      // Convert TimeOfDay to DateTime
       DateTime now = DateTime.now();
       DateTime dateTime = DateTime(now.year, now.month, now.day,
           _notificationTime!.hour, _notificationTime!.minute);
