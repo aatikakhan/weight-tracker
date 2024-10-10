@@ -31,12 +31,11 @@ class MyApp extends StatelessWidget {
             title: 'Weight Tracker',
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
-            themeMode:
-                weightProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: weightProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             initialRoute: '/',
             routes: {
               '/': (context) => const HomeScreen(),
-              '/settings': (context) => const SettingsScreen(),
+              // '/settings': (context) => const SettingsScreen(),
             },
           );
         },
