@@ -1,43 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  // Define channel ID and name
+  static const String _channelId = 'weight_tracker_channel';
+  static const String _channelName = 'Weight Tracker Notifications';
 
-  TimeOfDay? _notificationTime; // Variable to store the notification time
+  TimeOfDay? _notificationTime;
 
   Future<void> init() async {
-    // Android Initialization Settings
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings(
-            '@mipmap/ic_launcher'); // Use your app icon
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: DarwinInitializationSettings(),
-    );
+        InitializationSettings(android: initializationSettingsAndroid);
 
-    // Initialize the plugin
     await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-    // Create a notification channel
     await _createNotificationChannel();
   }
 
   Future<void> _createNotificationChannel() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'your_channel_id', // Unique channel ID
-      'your_channel_name', // User-visible channel name
+      _channelId,
+      _channelName,
       description: 'Channel for weight tracker notifications',
-      importance: Importance.high, // Importance level
-      playSound: true, // Play sound when a notification is received
+      importance: Importance.high,
+      playSound: true,
     );
 
-    // Create the channel on the device
     await _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -66,26 +61,20 @@ class NotificationService {
     return 'Not set';
   }
 
-  // Method to schedule daily notifications
   Future<void> scheduleDailyNotification(TimeOfDay time) async {
     await _flutterLocalNotificationsPlugin.zonedSchedule(
-      0, // Notification ID
+      0,
       'Weight Tracker Reminder',
       'Don\'t forget to record your weight today!',
       _nextInstanceOfTime(time),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'your_channel_id',
-          'your_channel_name',
+          _channelId,
+          _channelName,
           channelDescription: 'Channel for weight tracker notifications',
-          importance: Importance.high, // Set importance level
-          priority: Priority.high, // Set priority level
-          playSound: true, // Enable sound
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true, // Show alert
-          presentBadge: true, // Badge app icon
-          presentSound: true, // Play sound
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -95,7 +84,6 @@ class NotificationService {
     );
   }
 
-  // Helper method to determine the next instance of the scheduled time
   tz.TZDateTime _nextInstanceOfTime(TimeOfDay time) {
     final now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
@@ -107,7 +95,6 @@ class NotificationService {
       time.minute,
     );
 
-    // If the scheduled time is already passed, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
