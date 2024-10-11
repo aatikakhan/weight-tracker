@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
 
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
@@ -25,6 +26,7 @@ class NotificationService {
   static const String _channelName = 'Weight Tracker Notifications';
 
   TimeOfDay? _notificationTime;
+
   Future<void> init() async {
     print("Initializing NotificationService...");
     await _configureLocalTimeZone();
@@ -65,7 +67,7 @@ class NotificationService {
   Future<void> _configureLocalTimeZone() async {
     try {
       tz.initializeTimeZones();
-       final String timeZoneName = 'Asia/Kolkata'; 
+      final String timeZoneName = 'Asia/Kolkata'; // Set to Asia/Kolkata
       tz.setLocalLocation(tz.getLocation(timeZoneName));
       print("Timezone configured: $timeZoneName");
     } catch (e) {
@@ -94,6 +96,23 @@ class NotificationService {
     print("Notification time selected: ${time.hour}:${time.minute}");
   }
 
+  Future<void> saveNotificationTime(TimeOfDay time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('notification_hour', time.hour);
+    await prefs.setInt('notification_minute', time.minute);
+  }
+
+  Future<TimeOfDay?> loadNotificationTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hour = prefs.getInt('notification_hour');
+    final minute = prefs.getInt('notification_minute');
+
+    if (hour != null && minute != null) {
+      return TimeOfDay(hour: hour, minute: minute);
+    }
+    return null; // Return null if no time is stored
+  }
+
   String getFormattedNotificationTime() {
     if (_notificationTime != null) {
       final now = tz.TZDateTime.now(tz.local);
@@ -110,7 +129,18 @@ class NotificationService {
     return 'Not set';
   }
 
-  Future<void> scheduleDailyNotification(TimeOfDay time) async {
+  Future<void> scheduleDailyNotification() async {
+    // Load the notification time from SharedPreferences
+    final storedTime = await loadNotificationTime();
+    if (storedTime != null) {
+      _notificationTime = storedTime; // Set the notification time
+    }
+
+    if (_notificationTime == null) {
+      print('Notification time is not set. Please select a time first.');
+      return;
+    }
+
     bool notificationGranted = await requestPermission();
     bool exactAlarmGranted = await requestExactAlarmPermission();
 
@@ -120,7 +150,7 @@ class NotificationService {
     }
 
     print('Scheduling notification...');
-    final scheduledDate = _nextInstanceOfTime(time);
+    final scheduledDate = _nextInstanceOfTime(_notificationTime!);
     print('Scheduled date: $scheduledDate');
     print('Current date: ${tz.TZDateTime.now(tz.local)}');
 
@@ -155,12 +185,6 @@ class NotificationService {
 
       print(
           'Notification scheduled successfully at ${getFormattedNotificationTime()}');
-
-      // Check pending notifications
-      await checkPendingNotifications();
-
-      // Immediately show a test notification
-      await _showTestNotification();
     } catch (e) {
       print('Error scheduling notification: $e');
     }
@@ -182,34 +206,7 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    // If the scheduled time is less than 1 minute in the future, add one more day
-    if (scheduledDate.difference(now) < const Duration(minutes: 1)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
     return scheduledDate;
-  }
-
-  Future<void> _showTestNotification() async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Channel for weight tracker notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      ticker: 'ticker',
-    );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-    await _flutterLocalNotificationsPlugin.show(
-      0,
-      'Test Notification',
-      'This is a test notification',
-      platformChannelSpecifics,
-      payload: 'test_payload',
-    );
-    print('Test notification sent.');
   }
 
   Future<bool> requestPermission() async {
@@ -235,16 +232,5 @@ class NotificationService {
     }
     print('Exact alarm permission status: ${status.isGranted}');
     return status.isGranted;
-  }
-
-  Future<void> checkPendingNotifications() async {
-    final List<PendingNotificationRequest> pendingNotificationRequests =
-        await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
-    print(
-        'Number of pending notifications: ${pendingNotificationRequests.length}');
-    for (var notification in pendingNotificationRequests) {
-      print(
-          'Pending notification: ID ${notification.id}, Title: ${notification.title}, Body: ${notification.body}');
-    }
   }
 }

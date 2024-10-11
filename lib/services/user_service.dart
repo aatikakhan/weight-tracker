@@ -1,47 +1,19 @@
-import 'package:sqflite/sqflite.dart';
-import 'database_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserService {
-  final DatabaseService _databaseService = DatabaseService();
-
-  // Set the user's name in the database
+  // Set the user's name in shared preferences
   Future<void> setUserName(String name) async {
-    final db = await _databaseService.database;
-
-    try {
-      await db.insert(
-        'user',
-        {'name': name},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      // Also mark that the app has run at least once
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('is_first_run', false);
-    } catch (e) {
-      print('Error setting user name: $e');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', name);
+    
+    // Also mark that the app has run at least once
+    await prefs.setBool('is_first_run', false);
   }
 
-  // Retrieve the user's name from the database
+  // Retrieve the user's name from shared preferences
   Future<String?> getUserName() async {
-    final db = await _databaseService.database;
-
-    try {
-      final List<Map<String, dynamic>> maps = await db.query('user');
-
-      // Check if the user exists and return their name
-      if (maps.isNotEmpty) {
-        print('User found: ${maps.first['name']}');
-        return maps.first['name'] as String;
-      }
-
-      print('No user found.');
-      return null;
-    } catch (e) {
-      print('Error retrieving user name: $e');
-      return null;
-    }
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_name'); // Return the user's name
   }
 
   // Check if this is the first run of the app

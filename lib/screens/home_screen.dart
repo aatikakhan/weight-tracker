@@ -24,33 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkForUserName() async {
     final userService = UserService();
+
+    // Check if this is the first run
     if (await userService.isFirstRun()) {
-      print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
+      String? userName = await _showUserNameDialog();
 
-      String? userName = await showDialog(
-        context: context,
-        builder: (context) {
-          String tempName = '';
-          return AlertDialog(
-            title: const Text('Enter Your Name'),
-            content: TextField(
-              onChanged: (value) {
-                tempName = value;
-              },
-              decoration: const InputDecoration(hintText: "Your name"),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(tempName);
-                },
-                child: const Text('Submit'),
-              ),
-            ],
-          );
-        },
-      );
-
+      // Check if the user provided a name
       if (userName != null && userName.isNotEmpty) {
         await userService.setUserName(userName);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,84 +42,88 @@ class _HomeScreenState extends State<HomeScreen> {
           initialTime: TimeOfDay.now(),
         );
 
+        // If the user selected a notification time
         if (notificationTime != null) {
           final notificationService =
               Provider.of<NotificationService>(context, listen: false);
-          await notificationService.scheduleDailyNotification(notificationTime);
-          setState(() {
-            _userName = userName; // Store the name for display
-          });
+          notificationService.selectNotificationTime(notificationTime);
+          await notificationService.scheduleDailyNotification();
         }
+
+        setState(() {
+          _userName = userName; // Store the name for display
+        });
       }
     } else {
+      // If it's not the first run, simply retrieve the username
       _userName = await userService.getUserName();
-      setState(() {});
+      setState(() {}); // Trigger a rebuild to update the UI
     }
   }
 
-  void _scheduleNotification() async {
-    final notificationService =
-        Provider.of<NotificationService>(context, listen: false);
-
-    // Request permission before scheduling notification
-    await notificationService.requestPermission();
-
-    TimeOfDay? time = await showTimePicker(
+  Future<String?> _showUserNameDialog() {
+    return showDialog<String>(
       context: context,
-      initialTime: TimeOfDay.now(),
+      builder: (context) {
+        String tempName = '';
+        return AlertDialog(
+          title: const Text('Enter Your Name'),
+          content: TextField(
+            onChanged: (value) {
+              tempName = value;
+            },
+            decoration: const InputDecoration(hintText: "Your name"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(tempName);
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
     );
-
-    if (time != null) {
-      notificationService.selectNotificationTime(time);
-      await notificationService.scheduleDailyNotification(time);
-
-      // Display a snack bar to indicate the scheduled time
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Notification scheduled for ${notificationService.getFormattedNotificationTime()}'),
-        ),
-      );
-
-      // Trigger a rebuild to update the UI
-      setState(() {});
-    }
   }
 
   void _addWeight() async {
-    double? weight = await showDialog(
-      context: context,
-      builder: (context) {
-        double tempWeight = 0;
-        return AlertDialog(
-            title: const Text('Add Weight'),
-            content: TextField(
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                tempWeight = double.tryParse(value) ?? 0;
-              },
-              decoration: const InputDecoration(hintText: "Enter your weight"),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(tempWeight);
-                },
-                child: const Text('Add'),
-              )
-            ]);
-      },
-    );
+    double? weight = await _showWeightDialog();
 
     if (weight != null && weight > 0) {
-      // Call your WeightProvider to add the weight
       Provider.of<WeightProvider>(context, listen: false).addWeight(weight);
     }
   }
 
+  Future<double?> _showWeightDialog() {
+    return showDialog<double>(
+      context: context,
+      builder: (context) {
+        double tempWeight = 0;
+        return AlertDialog(
+          title: const Text('Add Weight'),
+          content: TextField(
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              tempWeight = double.tryParse(value) ?? 0;
+            },
+            decoration: const InputDecoration(hintText: "Enter your weight"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(tempWeight);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final notificationService = Provider.of<NotificationService>(context);
     final weightProvider = Provider.of<WeightProvider>(context);
 
     return Scaffold(
@@ -166,25 +149,22 @@ class _HomeScreenState extends State<HomeScreen> {
           Consumer<WeightProvider>(
             builder: (context, weightProvider, child) {
               List weightList = weightProvider.weights.reversed.toList();
-              return ListView.builder(
-                itemCount: weightList.length,
-                itemBuilder: (context, index) {
-                  return WeightEntryTile(weightList[index]);
-                },
+              return Expanded(
+                child: ListView.builder(
+                  itemCount: weightList.length,
+                  itemBuilder: (context, index) {
+                    return WeightEntryTile(weightList[index]);
+                  },
+                ),
               );
             },
           ),
         ],
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            backgroundColor: Theme.of(context).primaryColor,
-            onPressed: _addWeight,
-            child: const Icon(Icons.add),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).primaryColor,
+        onPressed: _addWeight,
+        child: const Icon(Icons.add),
       ),
     );
   }
