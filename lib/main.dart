@@ -8,26 +8,39 @@ import 'theme/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  tz.initializeTimeZones();
-  
-  final notificationService = NotificationService();
-  await notificationService.init();
 
-  runApp(MyApp(notificationService: notificationService));
+  // Initialize timezone data
+  tz.initializeTimeZones();
+
+  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  final NotificationService notificationService;
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
 
-  const MyApp({super.key, required this.notificationService});
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final NotificationService notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotificationService();
+  }
+
+  Future<void> _initializeNotificationService() async {
+    await notificationService.init();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => WeightProvider()),
-        Provider(create: (_) => NotificationService()), // Provide NotificationService
+        Provider<NotificationService>.value(value: notificationService),
       ],
       child: Consumer<WeightProvider>(
         builder: (context, weightProvider, child) {
@@ -35,7 +48,8 @@ class MyApp extends StatelessWidget {
             title: 'Weight Tracker',
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
-            themeMode: weightProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode:
+                weightProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: const HomeScreen(),
           );
         },
