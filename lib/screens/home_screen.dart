@@ -122,6 +122,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _changeNotificationTime() async {
+    TimeOfDay? newTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (newTime != null) {
+      final notificationService =
+          Provider.of<NotificationService>(context, listen: false);
+      notificationService.selectNotificationTime(newTime);
+      await notificationService.saveNotificationTime(newTime); // Save new time
+      await notificationService.scheduleDailyNotification(_userName); // Reschedule notification
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Notification time updated to ${newTime.format(context)}!')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final weightProvider = Provider.of<WeightProvider>(context);
@@ -141,6 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               weightProvider.toggleTheme();
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.access_time),
+            onPressed: _changeNotificationTime, // Change notification time
           ),
         ],
       ),
