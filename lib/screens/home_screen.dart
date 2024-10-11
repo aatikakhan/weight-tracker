@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final notificationService =
               Provider.of<NotificationService>(context, listen: false);
           notificationService.selectNotificationTime(notificationTime);
-          await notificationService.scheduleDailyNotification();
+          await notificationService.scheduleDailyNotification(userName);
         }
 
         setState(() {
