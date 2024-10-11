@@ -59,7 +59,7 @@ class WeightProvider with ChangeNotifier {
     if (alreadyRecorded) {
       // Notify the user that they cannot add another entry for today
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('You can only add one weight entry per day!')),
+        const SnackBar(content: Text('You can only add one weight entry per day!')),
       );
       return; // Exit the method early if an entry already exists
     }

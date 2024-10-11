@@ -24,40 +24,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkForUserName() async {
     final userService = UserService();
-
-    // Check if this is the first run
-    if (await userService.isFirstRun()) {
+    _userName = await userService.getUserName();
+    
+    // Check for user's name
+    if (_userName == null || _userName!.isEmpty) {
+      // Prompt for username if not set
       String? userName = await _showUserNameDialog();
-
-      // Check if the user provided a name
       if (userName != null && userName.isNotEmpty) {
         await userService.setUserName(userName);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Welcome, $userName!')),
-        );
 
         // Ask user to set notification time
-        TimeOfDay? notificationTime = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
-        );
-
-        // If the user selected a notification time
-        if (notificationTime != null) {
-          final notificationService =
-              Provider.of<NotificationService>(context, listen: false);
-          notificationService.selectNotificationTime(notificationTime);
-          await notificationService.scheduleDailyNotification(userName);
-        }
-
-        setState(() {
-          _userName = userName; // Store the name for display
-        });
+        await _selectNotificationTime(userName);
+      } else {
+        // If no name is provided, recheck the user name
+        _checkForUserName();
       }
     } else {
-      // If it's not the first run, simply retrieve the username
-      _userName = await userService.getUserName();
-      setState(() {}); // Trigger a rebuild to update the UI
+      // If the username is already set, check for notification time
+      await _checkForNotificationTime();
+    }
+  }
+
+  Future<void> _checkForNotificationTime() async {
+    final userService = UserService();
+    TimeOfDay? notificationTime = await userService.getNotificationTime();
+    
+    if (notificationTime == null) {
+      // Ask user to set notification time
+      await _selectNotificationTime(_userName!);
+    } else {
+      setState(() {});
+    }
+  }
+
+  Future<void> _selectNotificationTime(String userName) async {
+    TimeOfDay? notificationTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    // If the user selected a notification time
+    if (notificationTime != null) {
+      final notificationService =
+          Provider.of<NotificationService>(context, listen: false);
+      notificationService.selectNotificationTime(notificationTime);
+      await notificationService.scheduleDailyNotification(userName);
+      
+      final userService = UserService();
+      await userService.saveNotificationTime(notificationTime); // Save the notification time
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Notification time set to ${notificationTime.format(context)}!')),
+      );
+    } else {
+      // If no notification time is set, ask again
+      await _selectNotificationTime(userName);
     }
   }
 
@@ -87,11 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _addWeight(context) async {
+  void _addWeight() async {
     double? weight = await _showWeightDialog();
 
     if (weight != null && weight > 0) {
-      // Pass the context to the WeightProvider to show the SnackBar
       await Provider.of<WeightProvider>(context, listen: false)
           .addWeight(weight, context);
     }
@@ -191,9 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).primaryColor,
-        onPressed: () {
-          _addWeight(context);
-        },
+        onPressed: _addWeight,
         child: const Icon(Icons.add),
       ),
     );
