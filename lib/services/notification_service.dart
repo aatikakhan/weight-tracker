@@ -128,69 +128,71 @@ class NotificationService {
     }
     return 'Not set';
   }
-Future<void> scheduleDailyNotification(String? userName) async {
-  // Load the notification time from SharedPreferences
-  final storedTime = await loadNotificationTime();
-  if (storedTime != null) {
-    _notificationTime = storedTime; // Set the notification time
-  }
 
-  if (_notificationTime == null) {
-    print('Notification time is not set. Please select a time first.');
-    return;
-  }
+  Future<void> scheduleDailyNotification(String? userName) async {
+    // Load the notification time from SharedPreferences
+    final storedTime = await loadNotificationTime();
+    if (storedTime != null) {
+      _notificationTime = storedTime; // Set the notification time
+    }
 
-  bool notificationGranted = await requestPermission();
-  bool exactAlarmGranted = await requestExactAlarmPermission();
+    if (_notificationTime == null) {
+      print('Notification time is not set. Please select a time first.');
+      return;
+    }
 
-  if (!notificationGranted || !exactAlarmGranted) {
-    print('Notification or exact alarm permission not granted.');
-    return;
-  }
+    bool notificationGranted = await requestPermission();
+    bool exactAlarmGranted = await requestExactAlarmPermission();
 
-  print('Scheduling notification...');
-  final scheduledDate = _nextInstanceOfTime(_notificationTime!);
-  print('Scheduled date: $scheduledDate');
-  print('Current date: ${tz.TZDateTime.now(tz.local)}');
+    if (!notificationGranted || !exactAlarmGranted) {
+      print('Notification or exact alarm permission not granted.');
+      return;
+    }
 
-  try {
-    String notificationBody = userName != null 
-        ? 'Hey $userName, don\'t forget to record your weight today!' 
-        : 'Don\'t forget to record your weight today!';
+    print('Scheduling notification...');
+    final scheduledDate = _nextInstanceOfTime(_notificationTime!);
+    print('Scheduled date: $scheduledDate');
+    print('Current date: ${tz.TZDateTime.now(tz.local)}');
 
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      0,
-      'Weight Tracker Reminder',
-      notificationBody,
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: 'Channel for weight tracker notifications',
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
+    try {
+      String notificationBody = userName != null
+          ? 'Hey $userName, don\'t forget to record your weight today!'
+          : 'Don\'t forget to record your weight today!';
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        0,
+        'Weight Tracker Reminder',
+        notificationBody,
+        scheduledDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: 'Channel for weight tracker notifications',
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'weight_tracker_payload',
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+        payload: 'weight_tracker_payload',
+      );
 
-    print('Notification scheduled successfully at ${getFormattedNotificationTime()}');
-  } catch (e) {
-    print('Error scheduling notification: $e');
+      print(
+          'Notification scheduled successfully at ${getFormattedNotificationTime()}');
+    } catch (e) {
+      print('Error scheduling notification: $e');
+    }
   }
-}
 
   tz.TZDateTime _nextInstanceOfTime(TimeOfDay time) {
     final now = tz.TZDateTime.now(tz.local);
