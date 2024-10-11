@@ -87,11 +87,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _addWeight() async {
+  void _addWeight(context) async {
     double? weight = await _showWeightDialog();
 
     if (weight != null && weight > 0) {
-      Provider.of<WeightProvider>(context, listen: false).addWeight(weight);
+      // Pass the context to the WeightProvider to show the SnackBar
+      await Provider.of<WeightProvider>(context, listen: false)
+          .addWeight(weight, context);
     }
   }
 
@@ -133,10 +135,13 @@ class _HomeScreenState extends State<HomeScreen> {
           Provider.of<NotificationService>(context, listen: false);
       notificationService.selectNotificationTime(newTime);
       await notificationService.saveNotificationTime(newTime); // Save new time
-      await notificationService.scheduleDailyNotification(_userName); // Reschedule notification
+      await notificationService
+          .scheduleDailyNotification(_userName); // Reschedule notification
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Notification time updated to ${newTime.format(context)}!')),
+        SnackBar(
+            content: Text(
+                'Notification time updated to ${newTime.format(context)}!')),
       );
     }
   }
@@ -186,7 +191,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).primaryColor,
-        onPressed: _addWeight,
+        onPressed: () {
+          _addWeight(context);
+        },
         child: const Icon(Icons.add),
       ),
     );

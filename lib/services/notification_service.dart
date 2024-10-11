@@ -152,7 +152,6 @@ class NotificationService {
     print('Scheduling notification...');
     final scheduledDate = _nextInstanceOfTime(_notificationTime!);
     print('Scheduled date: $scheduledDate');
-    print('Current date: ${tz.TZDateTime.now(tz.local)}');
 
     try {
       String notificationBody = userName != null

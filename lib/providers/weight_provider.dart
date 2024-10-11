@@ -21,41 +21,55 @@ class WeightProvider with ChangeNotifier {
   Future<void> _checkForMissedDays() async {
     final now = DateTime.now();
 
-    // If there are no weights recorded, do nothing
     if (_weights.isEmpty) return;
 
-    // Find the earliest date from recorded weights
     final earliestDate = _weights
         .map((entry) => entry.date)
         .reduce((a, b) => a.isBefore(b) ? a : b);
 
     List<WeightEntry> missedEntries = [];
 
-    // Check each day from the earliest entry date to today
     for (DateTime dateToCheck = earliestDate;
         dateToCheck.isBefore(now) || dateToCheck.isAtSameMomentAs(now);
         dateToCheck = dateToCheck.add(const Duration(days: 1))) {
-      // Check if the date is in the list of recorded weight dates
       if (!_weights.any((entry) => entry.date.isAtSameMomentAs(dateToCheck))) {
         missedEntries.add(WeightEntry(
-          date: dateToCheck, // Use DateTime directly
-          weight: 0.0, // No weight recorded
+          date: dateToCheck,
+          weight: 0.0,
           isMissed: true,
         ));
       }
     }
 
-    // Add missed entries to the list, avoiding duplicates
     _weights.addAll(missedEntries.where((missed) => !_weights.any((entry) =>
         entry.date.isAtSameMomentAs(missed.date) && entry.isMissed)));
   }
 
-  Future<void> addWeight(double weight) async {
+  Future<void> addWeight(double weight,context) async {
+    final today = DateTime.now();
+
+    // Check if there's already an entry for today
+    bool alreadyRecorded = _weights.any((entry) {
+      final entryDate = entry.date;
+      return entryDate.year == today.year &&
+             entryDate.month == today.month &&
+             entryDate.day == today.day;
+    });
+
+    if (alreadyRecorded) {
+      // Notify the user that they cannot add another entry for today
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: const Text('You can only add one weight entry per day!')),
+      );
+      return; // Exit the method early if an entry already exists
+    }
+
     final entry = WeightEntry(
       id: null,
-      date: DateTime.now(),
+      date: today,
       weight: weight,
     );
+
     await _databaseService.insertWeight(entry);
     await loadWeights(); // Refresh the list after adding
   }
