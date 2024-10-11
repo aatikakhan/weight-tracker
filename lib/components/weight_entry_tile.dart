@@ -11,18 +11,30 @@ class WeightEntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     String formattedDate =
         DateFormat('dd MMMM yyyy hh:mm a').format(entry.date);
-    return ListTile(
-      title: entry.isMissed
-          ? const Text(
-              'You Missed',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            )
-          : Text(
-              'Weight: ${entry.weight} kg',
-              style: const TextStyle(fontWeight: FontWeight.normal),
-            ),
-      subtitle: Text(formattedDate),
-      tileColor: entry.isMissed ? Colors.red.shade100 : Colors.transparent,
+
+    return Container(
+      margin: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blue),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: ListTile(
+        title: entry.isMissed
+            ? const Text(
+                'You Missed',
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              )
+            : Text(
+                'Weight: ${entry.weight} kg',
+                style: TextStyle(color: Theme.of(context).primaryColor),
+              ),
+        subtitle: Text(
+          formattedDate,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        tileColor: entry.isMissed ? Colors.red.shade100 : Colors.transparent,
+      ),
     );
   }
 }

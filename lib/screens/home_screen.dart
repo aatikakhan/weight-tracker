@@ -88,42 +88,68 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Weight Tracker'),
         actions: [
-          SizedBox(
-            width: MediaQuery.of(context).size.width, // or a specific width
-            child: SwitchListTile(
-              title: const Text('Dark Mode'),
-              value: weightProvider.isDarkMode,
-              onChanged: (value) {
-                weightProvider.toggleTheme();
-              },
+          IconButton(
+            icon: Icon(
+              weightProvider.isDarkMode
+                  ? Icons.brightness_4_outlined
+                  : Icons.brightness_4_outlined,
             ),
+            onPressed: () {
+              weightProvider.toggleTheme();
+            },
           ),
         ],
       ),
       body: Column(
         children: [
-          // Permanent tile to display scheduled notification time
           Container(
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.blue),
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Scheduled Notification Time:',
-                  style: TextStyle(fontSize: 16),
-                ),
-                Text(
-                  notificationService.getFormattedNotificationTime(),
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: notificationService.getFormattedNotificationTime() ==
+                    'Not set'
+                ? Container(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                    margin: const EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Select Notification Time:',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        IconButton(
+                          onPressed: _scheduleNotification,
+                          icon: const Icon(Icons.alarm),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    padding: const EdgeInsets.all(20.0),
+                    margin: const EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Scheduled Notification Time:',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          notificationService.getFormattedNotificationTime(),
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
           Expanded(
             child: Consumer<WeightProvider>(
@@ -144,13 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
+            backgroundColor: Theme.of(context).primaryColor,
             onPressed: _addWeight,
             child: const Icon(Icons.add),
-          ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            onPressed: _scheduleNotification,
-            child: const Icon(Icons.alarm),
           ),
         ],
       ),
