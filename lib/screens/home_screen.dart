@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/weight_provider.dart';
 import '../services/notification_service.dart';
 import '../components/weight_entry_tile.dart';
+import '../services/user_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,10 +13,69 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _userName;
+
   @override
   void initState() {
     super.initState();
+    _checkForUserName();
     Provider.of<WeightProvider>(context, listen: false).loadWeights();
+  }
+
+  Future<void> _checkForUserName() async {
+    final userService = UserService();
+    if (await userService.isFirstRun()) {
+      print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
+
+      String? userName = await showDialog(
+        context: context,
+        builder: (context) {
+          String tempName = '';
+          return AlertDialog(
+            title: const Text('Enter Your Name'),
+            content: TextField(
+              onChanged: (value) {
+                tempName = value;
+              },
+              decoration: const InputDecoration(hintText: "Your name"),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(tempName);
+                },
+                child: const Text('Submit'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (userName != null && userName.isNotEmpty) {
+        await userService.setUserName(userName);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Welcome, $userName!')),
+        );
+
+        // Ask user to set notification time
+        TimeOfDay? notificationTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+
+        if (notificationTime != null) {
+          final notificationService =
+              Provider.of<NotificationService>(context, listen: false);
+          await notificationService.scheduleDailyNotification(notificationTime);
+          setState(() {
+            _userName = userName; // Store the name for display
+          });
+        }
+      }
+    } else {
+      _userName = await userService.getUserName();
+      setState(() {});
+    }
   }
 
   void _scheduleNotification() async {
@@ -53,29 +113,28 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         double tempWeight = 0;
         return AlertDialog(
-          title: const Text('Add Weight'),
-          content: TextField(
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              tempWeight = double.tryParse(value) ?? 0;
-            },
-            decoration: const InputDecoration(hintText: "Enter your weight"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(tempWeight);
+            title: const Text('Add Weight'),
+            content: TextField(
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                tempWeight = double.tryParse(value) ?? 0;
               },
-              child: const Text('Add'),
+              decoration: const InputDecoration(hintText: "Enter your weight"),
             ),
-          ],
-        );
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(tempWeight);
+                },
+                child: const Text('Add'),
+              )
+            ]);
       },
     );
 
     if (weight != null && weight > 0) {
-      await Provider.of<WeightProvider>(context, listen: false)
-          .addWeight(weight);
+      // Call your WeightProvider to add the weight
+      Provider.of<WeightProvider>(context, listen: false).addWeight(weight);
     }
   }
 
@@ -86,7 +145,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weight Tracker'),
+        title: Text(_userName != null
+            ? 'Weight Tracker - $_userName'
+            : 'Weight Tracker'),
         actions: [
           IconButton(
             icon: Icon(
@@ -102,67 +163,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: notificationService.getFormattedNotificationTime() ==
-                    'Not set'
-                ? Container(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                    margin: const EdgeInsets.all(8.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Select Notification Time:',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        IconButton(
-                          onPressed: _scheduleNotification,
-                          icon: const Icon(Icons.alarm),
-                          padding: EdgeInsets.zero,
-                        ),
-                      ],
-                    ),
-                  )
-                : Container(
-                    padding: const EdgeInsets.all(20.0),
-                    margin: const EdgeInsets.all(8.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Scheduled Notification Time:',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          notificationService.getFormattedNotificationTime(),
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-          Expanded(
-            child: Consumer<WeightProvider>(
-              builder: (context, weightProvider, child) {
-                List weightList = weightProvider.weights.reversed.toList();
-                return ListView.builder(
-                  itemCount: weightList.length,
-                  itemBuilder: (context, index) {
-                    return WeightEntryTile(weightList[index]);
-                  },
-                );
-              },
-            ),
+          Consumer<WeightProvider>(
+            builder: (context, weightProvider, child) {
+              List weightList = weightProvider.weights.reversed.toList();
+              return ListView.builder(
+                itemCount: weightList.length,
+                itemBuilder: (context, index) {
+                  return WeightEntryTile(weightList[index]);
+                },
+              );
+            },
           ),
         ],
       ),

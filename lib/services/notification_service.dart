@@ -65,7 +65,7 @@ class NotificationService {
   Future<void> _configureLocalTimeZone() async {
     try {
       tz.initializeTimeZones();
-      final String timeZoneName = tz.local.name;
+       final String timeZoneName = 'Asia/Kolkata'; 
       tz.setLocalLocation(tz.getLocation(timeZoneName));
       print("Timezone configured: $timeZoneName");
     } catch (e) {
