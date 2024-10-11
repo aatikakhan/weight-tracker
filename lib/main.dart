@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'providers/weight_provider.dart';
 import 'screens/home_screen.dart';
-// import 'screens/settings_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/theme.dart';
-import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().init();
+  
   tz.initializeTimeZones();
   
-  runApp(const MyApp());
+  final notificationService = NotificationService();
+  await notificationService.init();
+
+  runApp(MyApp(notificationService: notificationService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final NotificationService notificationService;
+
+  const MyApp({super.key, required this.notificationService});
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +36,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: weightProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            initialRoute: '/',
-            routes: {
-              '/': (context) => const HomeScreen(),
-              // '/settings': (context) => const SettingsScreen(),
-            },
+            home: const HomeScreen(),
           );
         },
       ),

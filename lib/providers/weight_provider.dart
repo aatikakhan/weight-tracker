@@ -34,7 +34,7 @@ class WeightProvider with ChangeNotifier {
     // Check each day from the earliest entry date to today
     for (DateTime dateToCheck = earliestDate;
         dateToCheck.isBefore(now) || dateToCheck.isAtSameMomentAs(now);
-        dateToCheck = dateToCheck.add(Duration(days: 1))) {
+        dateToCheck = dateToCheck.add(const Duration(days: 1))) {
       // Check if the date is in the list of recorded weight dates
       if (!_weights.any((entry) => entry.date.isAtSameMomentAs(dateToCheck))) {
         missedEntries.add(WeightEntry(
