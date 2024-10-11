@@ -15,6 +15,10 @@ class WeightProvider with ChangeNotifier {
   Future<void> loadWeights() async {
     _weights = await _databaseService.getWeights();
     await _checkForMissedDays();
+    
+    // Sort the weights by date after loading and checking missed days
+    _weights.sort((a, b) => a.date.compareTo(b.date));
+
     notifyListeners();
   }
 
@@ -41,19 +45,23 @@ class WeightProvider with ChangeNotifier {
       }
     }
 
+    // Add missed entries and then sort
     _weights.addAll(missedEntries.where((missed) => !_weights.any((entry) =>
         entry.date.isAtSameMomentAs(missed.date) && entry.isMissed)));
+
+    // Sort again after adding missed entries
+    _weights.sort((a, b) => a.date.compareTo(b.date));
   }
 
-  Future<void> addWeight(double weight,context) async {
+  Future<void> addWeight(double weight, context) async {
     final today = DateTime.now();
 
     // Check if there's already an entry for today
     bool alreadyRecorded = _weights.any((entry) {
       final entryDate = entry.date;
       return entryDate.year == today.year &&
-             entryDate.month == today.month &&
-             entryDate.day == today.day;
+          entryDate.month == today.month &&
+          entryDate.day == today.day;
     });
 
     if (alreadyRecorded) {
