@@ -15,7 +15,7 @@ class WeightProvider with ChangeNotifier {
   Future<void> loadWeights() async {
     _weights = await _databaseService.getWeights();
     await _checkForMissedDays();
-    
+
     // Sort the weights by date after loading and checking missed days
     _weights.sort((a, b) => a.date.compareTo(b.date));
 
@@ -24,6 +24,7 @@ class WeightProvider with ChangeNotifier {
 
   Future<void> _checkForMissedDays() async {
     final now = DateTime.now();
+    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     if (_weights.isEmpty) return;
 
@@ -36,7 +37,8 @@ class WeightProvider with ChangeNotifier {
     for (DateTime dateToCheck = earliestDate;
         dateToCheck.isBefore(now) || dateToCheck.isAtSameMomentAs(now);
         dateToCheck = dateToCheck.add(const Duration(days: 1))) {
-      if (!_weights.any((entry) => entry.date.isAtSameMomentAs(dateToCheck))) {
+      if (dateToCheck.isBefore(endOfToday) &&
+          !_weights.any((entry) => entry.date.isAtSameMomentAs(dateToCheck))) {
         missedEntries.add(WeightEntry(
           date: dateToCheck,
           weight: 0.0,
@@ -67,7 +69,8 @@ class WeightProvider with ChangeNotifier {
     if (alreadyRecorded) {
       // Notify the user that they cannot add another entry for today
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You can only add one weight entry per day!')),
+        const SnackBar(
+            content: Text('You can only add one weight entry per day!')),
       );
       return; // Exit the method early if an entry already exists
     }
