@@ -9,8 +9,7 @@ class WeightEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String formattedDate =
-        DateFormat('dd MMMM yyyy hh:mm a').format(entry.date);
+    String formattedDate = DateFormat('E dd MMM').format(entry.date);
 
     return Container(
       margin: const EdgeInsets.all(8.0),
