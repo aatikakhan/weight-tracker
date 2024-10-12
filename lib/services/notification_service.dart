@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  print('Notification tapped in background: ${notificationResponse.payload}');
+  // Handle notification tapped in background. Not requiredas having only one page
 }
 
 class NotificationService {
@@ -28,7 +28,6 @@ class NotificationService {
   TimeOfDay? _notificationTime;
 
   Future<void> init() async {
-    print("Initializing NotificationService...");
     await _configureLocalTimeZone();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -41,7 +40,7 @@ class NotificationService {
       requestSoundPermission: true,
       onDidReceiveLocalNotification:
           (int id, String? title, String? body, String? payload) async {
-        print('Received iOS notification: $title');
+        // Handle iOS notification received
       },
     );
 
@@ -55,13 +54,12 @@ class NotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse:
           (NotificationResponse notificationResponse) {
-        print('Notification tapped: ${notificationResponse.payload}');
+        // Handle notification tapped
       },
       onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
     await _createNotificationChannel();
-    print("NotificationService initialized successfully.");
   }
 
   Future<void> _configureLocalTimeZone() async {
@@ -69,9 +67,8 @@ class NotificationService {
       tz.initializeTimeZones();
       final String timeZoneName = 'Asia/Kolkata'; // Set to Asia/Kolkata
       tz.setLocalLocation(tz.getLocation(timeZoneName));
-      print("Timezone configured: $timeZoneName");
     } catch (e) {
-      print("Error configuring timezone: $e");
+      // Handle timezone configuration error
     }
   }
 
@@ -88,12 +85,10 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
-    print("Notification channel created.");
   }
 
   void selectNotificationTime(TimeOfDay time) {
     _notificationTime = time;
-    print("Notification time selected: ${time.hour}:${time.minute}");
   }
 
   Future<void> saveNotificationTime(TimeOfDay time) async {
@@ -137,21 +132,17 @@ class NotificationService {
     }
 
     if (_notificationTime == null) {
-      print('Notification time is not set. Please select a time first.');
-      return;
+      return; // Notification time is not set
     }
 
     bool notificationGranted = await requestPermission();
     bool exactAlarmGranted = await requestExactAlarmPermission();
 
     if (!notificationGranted || !exactAlarmGranted) {
-      print('Notification or exact alarm permission not granted.');
-      return;
+      return; // Permission not granted
     }
 
-    print('Scheduling notification...');
     final scheduledDate = _nextInstanceOfTime(_notificationTime!);
-    print('Scheduled date: $scheduledDate');
 
     try {
       String notificationBody = userName != null
@@ -185,11 +176,8 @@ class NotificationService {
         matchDateTimeComponents: DateTimeComponents.time,
         payload: 'weight_tracker_payload',
       );
-
-      print(
-          'Notification scheduled successfully at ${getFormattedNotificationTime()}');
     } catch (e) {
-      print('Error scheduling notification: $e');
+      // Handle scheduling error
     }
   }
 
@@ -215,25 +203,20 @@ class NotificationService {
   Future<bool> requestPermission() async {
     var status = await Permission.notification.status;
     if (!status.isGranted) {
-      print('Notification permission not granted, requesting...');
       status = await Permission.notification.request();
     }
-    print('Notification permission status: ${status.isGranted}');
     return status.isGranted;
   }
 
   Future<bool> requestExactAlarmPermission() async {
     if (await Permission.scheduleExactAlarm.isRestricted) {
-      print('Exact alarm permission is restricted.');
       return false;
     }
 
     var status = await Permission.scheduleExactAlarm.status;
     if (!status.isGranted) {
-      print('Exact alarm permission not granted, requesting...');
       status = await Permission.scheduleExactAlarm.request();
     }
-    print('Exact alarm permission status: ${status.isGranted}');
     return status.isGranted;
   }
 }
